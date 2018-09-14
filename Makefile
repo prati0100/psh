@@ -12,6 +12,7 @@ default: all
 PHONY: default clean all release release_build
 
 clean:
+	@echo Cleaning...
 	@rm -f $(OBJDIR)/*.o
 
 all: CFLAGS += -D PSH_DEBUG
