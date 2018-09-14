@@ -4,8 +4,7 @@
 
 #include <psh.h>
 
-static
-void
+static void
 shell_loop()
 {
 	while (1) {
