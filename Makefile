@@ -7,7 +7,9 @@ BINDIR = bin
 
 OBJS = $(patsubst %.c,$(OBJDIR)/%.o,$(wildcard *.c))
 
-PHONY: clean all release release_build
+default: all
+
+PHONY: default clean all release release_build
 
 clean:
 	@rm -f $(OBJDIR)/*.o
