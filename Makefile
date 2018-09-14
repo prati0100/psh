@@ -14,13 +14,13 @@ clean:
 
 all: CFLAGS += -D PSH_DEBUG
 all: $(OBJS)
-	$(CC) -o $(BINDIR)/psh $^ $(CLFAGS) $(INCLUDES)
+	@$(CC) -o $(BINDIR)/psh $^ $(CLFAGS) $(INCLUDES)
 
 release: clean release_build
 
 release_build: $(OBJS)
-	$(CC) -o $(BINDIR)/psh $^ $(CLFAGS) $(INCLUDES)
+	@$(CC) -o $(BINDIR)/psh $^ $(CLFAGS) $(INCLUDES)
 
 $(OBJDIR)/%.o : %.c $(DEPS)
 	@echo Building $<
-	$(CC) -c -o $@ $< $(CFLAGS) $(INCLUDES)
+	@$(CC) -c -o $@ $< $(CFLAGS) $(INCLUDES)
