@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define PSH_DEBUG
-
 #include <psh.h>
-
 
 static
 void
