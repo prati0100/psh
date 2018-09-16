@@ -14,6 +14,7 @@ PHONY: default clean all release release_build
 clean:
 	@echo Cleaning...
 	@rm -f $(OBJDIR)/*.o
+	@rm -f $(BINDIR)/*
 
 all: CFLAGS += -D PSH_DEBUG
 all: $(OBJS)
