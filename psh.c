@@ -165,7 +165,12 @@ psh_loop()
 int
 main()
 {
-	/* Shell init code goes here. There is nothing right now. */
+	/* Shell init code goes here. */
+
+	/* Ignore SIGINT. */
+	struct sigaction sigint_act;
+	sigint_act.sa_handler = SIG_IGN;
+	sigaction(SIGINT, &sigint_act, NULL);
 
 	/* The main loop of the shell. Does not return. */
 	psh_loop();
