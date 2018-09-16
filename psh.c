@@ -15,10 +15,19 @@
 #define ARGV_CHUNK_SZ 10
 
 static void psh_cd(char **);
+static void psh_exit(char **);
 
 static void (*builtin_handlers[])(char **) = {
 	psh_cd,
+	psh_exit
 };
+
+static void
+psh_exit(char **argv)
+{
+	/* The clean-up code goes here. */
+	exit(0);
+}
 
 static char *
 psh_setup_cwd()
@@ -101,7 +110,7 @@ psh_exec(char **argv)
 static void
 psh_loop()
 {
-	int i, argv_sz;
+	int i, argv_sz, ch;
 	char cmd_buf[ARG_MAX], **argv, *cwd;
 
 	while (true) {
@@ -109,7 +118,15 @@ psh_loop()
 		printf("%s> ", cwd);
 
 		/* Read from stdin. Then fork and exec the new command. */
-		fgets(cmd_buf, ARG_MAX, stdin);
+		for (i = 0; (ch = fgetc(stdin)) != '\n'; i++) {
+			if (ch == EOF) {
+				printf("exit\n");
+				psh_exit(NULL);
+			}
+
+			cmd_buf[i] = ch;
+		}
+		cmd_buf[i] = 0;
 
 		/* Parse the string and get the command line arguments to pass. */
 

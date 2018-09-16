@@ -26,6 +26,7 @@
 
 char *psh_builtins[] = {
 	"cd",
+	"exit",
 	NULL
 };
 
