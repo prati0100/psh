@@ -14,6 +14,12 @@
 /* Amount of argv pointers to allocate at a time. */
 #define ARGV_CHUNK_SZ 10
 
+static void psh_cd(char **);
+
+static void (*builtin_handlers[])(char **) = {
+	psh_cd,
+};
+
 static char *
 psh_setup_cwd()
 {
@@ -42,14 +48,38 @@ psh_setup_cwd()
 }
 
 static void
+psh_cd(char **argv)
+{
+	if (chdir(argv[1])) {
+		printf("Error! %s\n", strerror(errno));
+	}
+}
+
+/*
+ * Check if the command list passed is a shell builtin command. If it is,
+ * execute it and return true. Otherwise, return false.
+ */
+static bool
+psh_check_builtin(char **argv)
+{
+	int i;
+
+	for (i = 0; psh_builtins[i] != NULL; i++) {
+		if (strcmp(argv[0], psh_builtins[i]) == 0) {
+			builtin_handlers[i](argv);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void
 psh_exec(char **argv)
 {
 	pid_t pid;
-	/* Check if the command is cd. If yes, handle it separately. */
-	if (strcmp(argv[0], "cd") == 0) {
-		if (chdir(argv[1])) {
-			printf("Error! %s\n", strerror(errno));
-		}
+	/* Check if the command is a shell-builtin. If yes, handle it separately. */
+	if (psh_check_builtin(argv)) {
 		return;
 	}
 

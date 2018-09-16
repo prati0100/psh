@@ -24,4 +24,9 @@
 /* The symbol used to represent the HOME. */
 #define HOME_SYMBOL '~'
 
+char *psh_builtins[] = {
+	"cd",
+	NULL
+};
+
 #endif	/* __PSH_H */
