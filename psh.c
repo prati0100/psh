@@ -29,7 +29,7 @@ shell_loop()
 		/* Get the length of the program's name. */
 		for (sz = 0; cmd_buf[sz] != ' ' && cmd_buf[sz] != '\n'; sz++);
 
-		progname = strndup(cmd_buf, sz)
+		progname = strndup(cmd_buf, sz);
 		if (progname == NULL) {
 			err(errno, "Failed to allocate buffer for program name");
 		}
