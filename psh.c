@@ -14,7 +14,7 @@
 static void
 shell_loop()
 {
-	int i;
+	int i, argv_sz;
 	pid_t pid;
 	char cmd_buf[ARG_MAX], **argv;
 
@@ -30,9 +30,21 @@ shell_loop()
 		if (argv == NULL) {
 			err(ENOMEM, "Failed to allocate argv buffer");
 		}
+		argv_sz = ARGV_CHUNK_SZ;
 
 		argv[0] = strtok(cmd_buf, " \n");
-		for (i = 1; (argv[i] = strtok(NULL, " \n")) != NULL; i++);
+		for (i = 1; (argv[i] = strtok(NULL, " \n")) != NULL; i++) {
+			/*
+			 * Ran out of argv pointers. Re-alloc the memory and initialize
+			 * the new memory to 0
+			 */
+			if (i == argv_sz - 1) {
+				DPRINTF("Ran out of argv pointers. Re-allocing\n");
+				argv_sz += ARGV_CHUNK_SZ;
+				argv = realloc(argv, sizeof(*argv) * argv_sz);
+				memset(argv + i + 1, 0, ARGV_CHUNK_SZ);
+			}
+		}
 
 		pid = fork();
 		if (pid < 0) {
