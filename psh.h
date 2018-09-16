@@ -13,7 +13,7 @@
 #endif
 
 #ifdef PSH_DEBUG
-#define DPRINTF(fmt, args...) printf("%s: " fmt, __func__, args)
+#define DPRINTF(fmt, args...) printf("%s: " fmt, __func__, ##args)
 #else
 #define DPRINTF(fmt, args...)
 #endif
