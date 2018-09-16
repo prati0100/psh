@@ -24,6 +24,7 @@
 /* The symbol used to represent the HOME. */
 #define HOME_SYMBOL '~'
 
+/* The built-in commands of the shell. */
 char *psh_builtins[] = {
 	"cd",
 	"exit",
