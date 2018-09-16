@@ -90,6 +90,9 @@ psh_loop()
 		argv_sz = ARGV_CHUNK_SZ;
 
 		argv[0] = strtok(cmd_buf, " \n");
+		if (argv[0] == NULL) {
+			continue;
+		}
 		for (i = 1; (argv[i] = strtok(NULL, " \n")) != NULL; i++) {
 			/*
 			 * Ran out of argv pointers. Re-alloc the memory and initialize
