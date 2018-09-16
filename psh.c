@@ -46,8 +46,9 @@ shell_loop()
 		} else {
 			wait(NULL);
 			free(progname);
-			/* Now read another command. */
 		}
+
+		/* Now read another command. */
 	}
 }
 
