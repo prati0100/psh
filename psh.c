@@ -54,6 +54,14 @@ shell_loop()
 			}
 		}
 
+		/* Check if the command is cd. If yes, handle it separately. */
+		if (strcmp(argv[0], "cd") == 0) {
+			if (chdir(argv[1])) {
+				printf("Error! %s\n", strerror(errno));
+			}
+			continue;
+		}
+
 		pid = fork();
 		if (pid < 0) {
 			err(errno, "Fork failed");
