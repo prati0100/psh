@@ -42,10 +42,36 @@ psh_setup_cwd()
 }
 
 static void
+psh_exec(char **argv)
+{
+	pid_t pid;
+	/* Check if the command is cd. If yes, handle it separately. */
+	if (strcmp(argv[0], "cd") == 0) {
+		if (chdir(argv[1])) {
+			printf("Error! %s\n", strerror(errno));
+		}
+		return;
+	}
+
+	pid = fork();
+	if (pid < 0) {
+		err(errno, "Fork failed");
+	}
+
+	if (pid == 0) {
+		execvp(argv[0], argv);
+		DPRINTF("execlp returned %d\n", errno);
+		printf("%s: %s\n", argv[0], strerror(errno));
+		exit(errno);
+	}
+
+	wait(NULL);
+}
+
+static void
 psh_loop()
 {
 	int i, argv_sz;
-	pid_t pid;
 	char cmd_buf[ARG_MAX], **argv, *cwd;
 
 	while (true) {
@@ -77,27 +103,8 @@ psh_loop()
 			}
 		}
 
-		/* Check if the command is cd. If yes, handle it separately. */
-		if (strcmp(argv[0], "cd") == 0) {
-			if (chdir(argv[1])) {
-				printf("Error! %s\n", strerror(errno));
-			}
-			continue;
-		}
+		psh_exec(argv);
 
-		pid = fork();
-		if (pid < 0) {
-			err(errno, "Fork failed");
-		}
-
-		if (pid == 0) {
-			execvp(argv[0], argv);
-			DPRINTF("execlp returned %d\n", errno);
-			printf("%s: %s\n", argv[0], strerror(errno));
-			exit(errno);
-		}
-
-		wait(NULL);
 		free(argv);
 		free(cwd);
 
