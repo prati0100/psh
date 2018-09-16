@@ -19,10 +19,15 @@ shell_loop()
 {
 	int i, argv_sz;
 	pid_t pid;
-	char cmd_buf[ARG_MAX], **argv;
+	char cmd_buf[ARG_MAX], **argv, *cwd;
 
 	while (true) {
-		printf("> ");
+		/*
+		 * TODO: cwd is allocated and freed every loop, when in most cases it
+		 * doesn't even change. Try to optimize it.
+		 */
+		cwd = getcwd(NULL, 0);
+		printf("%s> ", cwd);
 
 		/* Read from stdin. Then fork and exec the new command. */
 		fgets(cmd_buf, ARG_MAX, stdin);
@@ -63,6 +68,7 @@ shell_loop()
 
 		wait(NULL);
 		free(argv);
+		free(cwd);
 
 		/* Now read another command. */
 	}
