@@ -111,7 +111,7 @@ static void
 psh_loop()
 {
 	int i, argv_sz, ch;
-	char cmd_buf[ARG_MAX], **argv, *cwd;
+	char cmd_buf[ARG_MAX], **argv, *cwd, *token;
 
 	while (true) {
 		cwd = psh_setup_cwd();
@@ -136,11 +136,17 @@ psh_loop()
 		}
 		argv_sz = ARGV_CHUNK_SZ;
 
-		argv[0] = strtok(cmd_buf, " \n");
-		if (argv[0] == NULL) {
+		token = strtok(cmd_buf, " \n");
+		if (token == NULL) {
 			continue;
 		}
-		for (i = 1; (argv[i] = strtok(NULL, " \n")) != NULL; i++) {
+		argv[0] = strdup(token);
+		for (i = 1; (token = strtok(NULL, " \n")) != NULL; i++) {
+			argv[i] = strdup(token);
+			if (argv[i] == NULL) {
+				err(ENOMEM, "Failed to allocate argument string");
+			}
+
 			/*
 			 * Ran out of argv pointers. Re-alloc the memory and initialize
 			 * the new memory to 0
@@ -155,6 +161,9 @@ psh_loop()
 
 		psh_exec(argv);
 
+		for (i = 0; argv[i] != NULL; i++) {
+			free(argv[i]);
+		}
 		free(argv);
 		free(cwd);
 
