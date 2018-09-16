@@ -14,6 +14,32 @@
 /* Amount of argv pointers to allocate at a time. */
 #define ARGV_CHUNK_SZ 10
 
+static char *
+psh_setup_cwd()
+{
+	int i, homelen, cwdlen;
+	char *cwd, *home;
+
+	/*
+	 * TODO: cwd is allocated and freed every loop, when in most cases it
+	 * doesn't even change. Try to optimize it.
+	 */
+	cwd = getcwd(NULL, 0);
+
+	/* Check if this belongs to a subdirectory of HOME. */
+	home = getenv("HOME");
+	if (strncmp(cwd, home, strlen(home)) == 0) {
+		cwd[0] = HOME_SYMBOL;
+		homelen = strlen(home);
+		cwdlen = strlen(cwd);
+		for (i = homelen; i <= cwdlen; i++) {
+			cwd[i - homelen + 1] = cwd[i];
+		}
+	}
+
+	return cwd;
+}
+
 static void
 psh_loop()
 {
@@ -22,11 +48,7 @@ psh_loop()
 	char cmd_buf[ARG_MAX], **argv, *cwd;
 
 	while (true) {
-		/*
-		 * TODO: cwd is allocated and freed every loop, when in most cases it
-		 * doesn't even change. Try to optimize it.
-		 */
-		cwd = getcwd(NULL, 0);
+		cwd = psh_setup_cwd();
 		printf("%s> ", cwd);
 
 		/* Read from stdin. Then fork and exec the new command. */

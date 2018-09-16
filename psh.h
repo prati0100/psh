@@ -21,4 +21,7 @@
 /* The maximum possible length of a shell command. */
 #define ARG_MAX 1024
 
+/* The symbol used to represent the HOME. */
+#define HOME_SYMBOL '~'
+
 #endif	/* __PSH_H */
