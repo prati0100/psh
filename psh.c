@@ -42,7 +42,8 @@ shell_loop()
 		if (pid == 0) {
 			execlp(progname, progname, NULL);
 			DPRINTF("execlp returned %d\n", errno);
-			err(errno, "Failed to exec the program");
+			printf("%s: %s\n", progname, strerror(errno));
+			exit(errno);
 		} else {
 			wait(NULL);
 			free(progname);
