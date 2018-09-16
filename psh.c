@@ -15,7 +15,7 @@
 #define ARGV_CHUNK_SZ 10
 
 static void
-shell_loop()
+psh_loop()
 {
 	int i, argv_sz;
 	pid_t pid;
@@ -88,7 +88,7 @@ main()
 	/* Shell init code goes here. There is nothing right now. */
 
 	/* The main loop of the shell. Does not return. */
-	shell_loop();
+	psh_loop();
 
 	/* NOTREACHED */
 	ASSERT(0, "Reached not reachable section");
