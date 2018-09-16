@@ -56,10 +56,10 @@ shell_loop()
 			DPRINTF("execlp returned %d\n", errno);
 			printf("%s: %s\n", argv[0], strerror(errno));
 			exit(errno);
-		} else {
-			wait(NULL);
-			free(argv);
 		}
+
+		wait(NULL);
+		free(argv);
 
 		/* Now read another command. */
 	}
