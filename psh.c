@@ -14,9 +14,9 @@
 static void
 shell_loop()
 {
-	int sz;
+	int i;
 	pid_t pid;
-	char cmd_buf[ARG_MAX], *progname;
+	char cmd_buf[ARG_MAX], **argv;
 
 	while (true) {
 		printf("> ");
@@ -26,13 +26,13 @@ shell_loop()
 
 		/* Parse the string and get the command line arguments to pass. */
 
-		/* Get the length of the program's name. */
-		for (sz = 0; cmd_buf[sz] != ' ' && cmd_buf[sz] != '\n'; sz++);
-
-		progname = strndup(cmd_buf, sz);
-		if (progname == NULL) {
-			err(errno, "Failed to allocate buffer for program name");
+		argv = calloc(ARGV_CHUNK_SZ, sizeof(*argv));
+		if (argv == NULL) {
+			err(ENOMEM, "Failed to allocate argv buffer");
 		}
+
+		argv[0] = strtok(cmd_buf, " \n");
+		for (i = 1; (argv[i] = strtok(NULL, " \n")) != NULL; i++);
 
 		pid = fork();
 		if (pid < 0) {
@@ -40,13 +40,13 @@ shell_loop()
 		}
 
 		if (pid == 0) {
-			execlp(progname, progname, NULL);
+			execvp(argv[0], argv);
 			DPRINTF("execlp returned %d\n", errno);
-			printf("%s: %s\n", progname, strerror(errno));
+			printf("%s: %s\n", argv[0], strerror(errno));
 			exit(errno);
 		} else {
 			wait(NULL);
-			free(progname);
+			free(argv);
 		}
 
 		/* Now read another command. */

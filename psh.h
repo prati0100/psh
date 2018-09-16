@@ -21,4 +21,7 @@
 /* The maximum possible length of a shell command. */
 #define ARG_MAX 1024
 
+/* Amount of argv pointers to allocate at a time. */
+#define ARGV_CHUNK_SZ 10
+
 #endif	/* __PSH_H */
