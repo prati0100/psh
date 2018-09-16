@@ -14,7 +14,7 @@
 static void
 shell_loop()
 {
-	int sz, i;
+	int sz;
 	pid_t pid;
 	char cmd_buf[ARG_MAX], *progname;
 
@@ -29,16 +29,10 @@ shell_loop()
 		/* Get the length of the program's name. */
 		for (sz = 0; cmd_buf[sz] != ' ' && cmd_buf[sz] != '\n'; sz++);
 
-		progname = malloc(sizeof(*progname) * sz);
+		progname = strndup(cmd_buf, sz)
 		if (progname == NULL) {
-			err(ENOMEM, "Failed to allocate buffer for program name");
+			err(errno, "Failed to allocate buffer for program name");
 		}
-
-		for (i = 0; i < sz; i++) {
-			progname[i] = cmd_buf[i];
-		}
-		/* Append the NULL terminator. */
-		progname[i] = 0;
 
 		pid = fork();
 		if (pid < 0) {
