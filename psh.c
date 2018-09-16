@@ -28,6 +28,7 @@ psh_setup_cwd()
 
 	/* Check if this belongs to a subdirectory of HOME. */
 	home = getenv("HOME");
+	ASSERT(home != NULL, "HOME is NULL");
 	if (strncmp(cwd, home, strlen(home)) == 0) {
 		cwd[0] = HOME_SYMBOL;
 		homelen = strlen(home);
