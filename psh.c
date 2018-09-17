@@ -165,9 +165,44 @@ psh_check_builtin(char **argv)
 }
 
 static void
-psh_exec(char **argv)
+psh_exec(char *cmd)
 {
+	char **argv, *token;
 	pid_t pid;
+	int i, argv_sz;
+
+	argv = calloc(ARGV_CHUNK_SZ, sizeof(*argv));
+	if (argv == NULL) {
+		err(ENOMEM, "Failed to allocate argv buffer");
+	}
+	argv_sz = ARGV_CHUNK_SZ;
+
+	psh_expand_alias(cmd);
+
+	token = strtok(cmd, " \n");
+	if (token == NULL) {
+		return;
+	}
+
+	argv[0] = strdup(token);
+	for (i = 1; (token = strtok(NULL, " \n")) != NULL; i++) {
+		argv[i] = strdup(token);
+		if (argv[i] == NULL) {
+			err(ENOMEM, "Failed to allocate argument string");
+		}
+
+		/*
+		 * Ran out of argv pointers. Re-alloc the memory and initialize
+		 * the new memory to 0
+		 */
+		if (i == argv_sz - 1) {
+			DPRINTF("Ran out of argv pointers. Re-allocing\n");
+			argv_sz += ARGV_CHUNK_SZ;
+			argv = realloc(argv, sizeof(*argv) * argv_sz);
+			memset(argv + i + 1, 0, ARGV_CHUNK_SZ);
+		}
+	}
+
 	/* Check if the command is a shell-builtin. If yes, handle it separately. */
 	if (psh_check_builtin(argv)) {
 		return;
@@ -186,13 +221,18 @@ psh_exec(char **argv)
 	}
 
 	wait(NULL);
+
+	for (i = 0; argv[i] != NULL; i++) {
+		free(argv[i]);
+	}
+	free(argv);
 }
 
 static void
 psh_loop()
 {
-	int i, argv_sz, ch;
-	char cmd_buf[ARG_MAX], **argv, *cwd, *token;
+	int i, ch;
+	char cmd_buf[ARG_MAX], *cwd;
 
 	while (true) {
 		cwd = psh_setup_cwd();
@@ -209,48 +249,9 @@ psh_loop()
 		}
 		cmd_buf[i] = 0;
 
-		/* Parse the string and get the command line arguments to pass. */
+		psh_exec(cmd_buf);
 
-		argv = calloc(ARGV_CHUNK_SZ, sizeof(*argv));
-		if (argv == NULL) {
-			err(ENOMEM, "Failed to allocate argv buffer");
-		}
-		argv_sz = ARGV_CHUNK_SZ;
-
-		psh_expand_alias(cmd_buf);
-
-		token = strtok(cmd_buf, " \n");
-		if (token == NULL) {
-			continue;
-		}
-
-		argv[0] = strdup(token);
-		for (i = 1; (token = strtok(NULL, " \n")) != NULL; i++) {
-			argv[i] = strdup(token);
-			if (argv[i] == NULL) {
-				err(ENOMEM, "Failed to allocate argument string");
-			}
-
-			/*
-			 * Ran out of argv pointers. Re-alloc the memory and initialize
-			 * the new memory to 0
-			 */
-			if (i == argv_sz - 1) {
-				DPRINTF("Ran out of argv pointers. Re-allocing\n");
-				argv_sz += ARGV_CHUNK_SZ;
-				argv = realloc(argv, sizeof(*argv) * argv_sz);
-				memset(argv + i + 1, 0, ARGV_CHUNK_SZ);
-			}
-		}
-
-		psh_exec(argv);
-
-		for (i = 0; argv[i] != NULL; i++) {
-			free(argv[i]);
-		}
-		free(argv);
 		free(cwd);
-
 		/* Now read another command. */
 	}
 }
