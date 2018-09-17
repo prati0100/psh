@@ -258,7 +258,7 @@ psh_loop()
 int
 main()
 {
-	/* Shell init code goes here. */
+	/* Shell initialization. */
 
 	/* Ignore SIGINT. */
 	struct sigaction sigint_act;
