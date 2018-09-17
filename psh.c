@@ -8,6 +8,7 @@
 
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <psh.h>
 
@@ -16,6 +17,8 @@
 
 /* Number of alias string pointers to allocate at a time. */
 #define ALIAS_CHUNK_SZ 20
+
+#define PSH_RCBUF_SZ 150
 
 struct psh_alias *aliases;
 int num_aliases;
@@ -256,6 +259,63 @@ psh_loop()
 	}
 }
 
+/* Read and execute the .pshrc file. */
+static void
+psh_readrc()
+{
+	FILE *rcfile;
+	char *rcpath, *home, *buf;
+
+	home = getenv("HOME");
+
+	/* We need to allocate memory for $HOME/.pshrc */
+	rcpath = malloc(sizeof(*rcpath) * (strlen(home) + sizeof(PSHRC_PATH) + 1));
+	if (rcpath == NULL) {
+		goto err;
+	}
+
+	/* strcat needs a nul-terminator to work. */
+	rcpath[0] = 0;
+	strcat(rcpath, home);
+	strcat(rcpath, "/");
+	strcat(rcpath, PSHRC_PATH);
+
+	rcfile = fopen(rcpath, "r");
+	if (rcfile == NULL) {
+		goto err_rcpath;
+	}
+
+	buf = malloc(sizeof(*buf) * PSH_RCBUF_SZ);
+	if (buf == NULL) {
+		goto err_rcpath;
+	}
+
+	while (fgets(buf, PSH_RCBUF_SZ, rcfile) != NULL) {
+		if (buf[strlen(buf) - 1] != '\n') {
+			printf("Line length too large\n");
+			continue;
+		}
+
+		/* Remove the trailing newline. */
+		buf[strlen(buf) - 1] = 0;
+
+		DPRINTF("%s\n", buf);
+		psh_exec(buf);
+	}
+
+	fclose(rcfile);
+
+	free(buf);
+	free(rcpath);
+	return;
+
+err_rcpath:
+	free(rcpath);
+err:
+	ASSERT(errno != 0, "On error handling path, but errno == 0");
+	DPRINTF("Failed to open %s: %s\n", PSHRC_PATH, strerror(errno));
+}
+
 int
 main()
 {
@@ -273,6 +333,8 @@ main()
 			strerror(ENOMEM));
 		num_aliases = -1;
 	}
+
+	psh_readrc();
 
 	/* The main loop of the shell. Does not return. */
 	psh_loop();

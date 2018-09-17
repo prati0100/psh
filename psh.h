@@ -21,6 +21,9 @@
 /* The maximum possible length of a shell command. */
 #define ARG_MAX 1024
 
+/* The .pshrc file is stored in ~/.pshrc */
+#define PSHRC_PATH ".pshrc"
+
 /* The symbol used to represent the HOME. */
 #define HOME_SYMBOL '~'
 
