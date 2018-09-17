@@ -24,8 +24,18 @@
 /* The symbol used to represent the HOME. */
 #define HOME_SYMBOL '~'
 
+struct psh_alias {
+	char *name;
+	char *value;
+};
+
+/* An array of current aliases. */
+extern struct psh_alias *aliases;
+extern int num_aliases;
+
 /* The built-in commands of the shell. */
 char *psh_builtins[] = {
+	"alias",
 	"cd",
 	"exit",
 	NULL

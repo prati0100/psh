@@ -14,10 +14,18 @@
 /* Amount of argv pointers to allocate at a time. */
 #define ARGV_CHUNK_SZ 10
 
+/* Number of alias string pointers to allocate at a time. */
+#define ALIAS_CHUNK_SZ 20
+
+struct psh_alias *aliases;
+int num_aliases;
+
 static void psh_cd(char **);
 static void psh_exit(char **);
+static void psh_add_alias(char **);
 
 static void (*builtin_handlers[])(char **) = {
+	psh_add_alias,
 	psh_cd,
 	psh_exit
 };
@@ -27,6 +35,79 @@ psh_exit(char **argv)
 {
 	/* The clean-up code goes here. */
 	exit(0);
+}
+
+static void
+psh_add_alias(char **argv)
+{
+	int valsz, i;
+	char *valstr;
+	ASSERT(strcmp(argv[0], "alias") == 0, "Not an alias command");
+
+	/* TODO: Expand the alias array when we run out. */
+
+	if (num_aliases == -1) {
+		printf("Error! Can't add alias. No more memory available\n");
+		return;
+	}
+
+	/* Make sure that alias does not already exist. */
+	for (i = 0; i < num_aliases; i++) {
+		if (strcmp(argv[1], aliases[i].name) == 0) {
+			printf("The alias for \"%s\" already exists\n", argv[1]);
+		}
+	}
+
+	if (argv[2] == NULL) {
+		printf("Error! No alias value specified\n");
+		return;
+	}
+
+	aliases[num_aliases].name = strdup(argv[1]);
+
+	/* Calculate the total size of the value field of the alias. */
+	for (valsz = 0, i = 2; argv[i] != NULL; i++) {
+		/* strlen() + 1 because of the space that was stripped when parsing. */
+		valsz += strlen(argv[i]) + 1;
+	}
+
+	valstr = malloc(sizeof(*valstr) * valsz);
+
+	/* Construct the value string by adding spaces before each argv. */
+	for (i = 2; argv[i] != NULL; i++) {
+		strcat(valstr, argv[i]);
+		strcat(valstr, " ");
+	}
+
+	/* Remove the last space. */
+	valstr[strlen(valstr) - 1] = 0;
+
+	aliases[num_aliases].value = valstr;
+	num_aliases++;
+}
+
+static void
+psh_expand_alias(char *cmd)
+{
+	int i, j, sz, shift;
+
+	/* Get the size of the command. */
+	for (sz = 0; cmd[sz] != ' ' && cmd[sz] != 0; sz++);
+
+	for (i = 0; i < num_aliases; i++) {
+		if (strncmp(aliases[i].name, cmd, sz) == 0) {
+			shift = strlen(aliases[i].value) - sz;
+			for (j = strlen(cmd); j >= sz; j--) {
+				cmd[j + shift] = cmd[j];
+			}
+
+			for (j = 0; j < strlen(aliases[i].value); j++) {
+				cmd[j] = aliases[i].value[j];
+			}
+
+			return;
+		}
+	}
 }
 
 static char *
@@ -136,10 +217,13 @@ psh_loop()
 		}
 		argv_sz = ARGV_CHUNK_SZ;
 
+		psh_expand_alias(cmd_buf);
+
 		token = strtok(cmd_buf, " \n");
 		if (token == NULL) {
 			continue;
 		}
+
 		argv[0] = strdup(token);
 		for (i = 1; (token = strtok(NULL, " \n")) != NULL; i++) {
 			argv[i] = strdup(token);
@@ -180,6 +264,14 @@ main()
 	struct sigaction sigint_act;
 	sigint_act.sa_handler = SIG_IGN;
 	sigaction(SIGINT, &sigint_act, NULL);
+
+	num_aliases = 0;
+	aliases = calloc(ALIAS_CHUNK_SZ, sizeof(*aliases));
+	if (aliases == NULL) {
+		printf("Failed to allocate an array for aliases: %s\n",
+			strerror(ENOMEM));
+		num_aliases = -1;
+	}
 
 	/* The main loop of the shell. Does not return. */
 	psh_loop();
