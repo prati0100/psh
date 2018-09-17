@@ -97,6 +97,10 @@ psh_expand_alias(char *cmd)
 	/* Get the size of the command. */
 	for (sz = 0; cmd[sz] != ' ' && cmd[sz] != 0; sz++);
 
+	if (sz == 0) {
+		return;
+	}
+
 	for (i = 0; i < num_aliases; i++) {
 		if (strncmp(aliases[i].name, cmd, sz) == 0) {
 			shift = strlen(aliases[i].value) - sz;
