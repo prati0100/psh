@@ -25,5 +25,12 @@ To clean up the object files for a fresh start, run:
 make clean
 ```
 
+# How to run it?
+After you have built psh using make, the binary is saved in the `bin` directory.
+You can execute the program using (assuming you are in the project root):
+```
+bin/psh
+```
+
 # How to contribute code?
 Really? Do you really want to contribute? Wow! Open a pull request, and I'll take a look.
