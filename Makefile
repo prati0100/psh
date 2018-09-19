@@ -18,6 +18,7 @@ clean:
 
 all: CFLAGS += -D PSH_DEBUG
 all: $(OBJS)
+	@mkdir -p ${BINDIR}
 	@$(CC) -o $(BINDIR)/psh $^ $(CLFAGS) $(INCLUDES)
 
 release: clean release_build
@@ -26,5 +27,6 @@ release_build: $(OBJS)
 	@$(CC) -o $(BINDIR)/psh $^ $(CLFAGS) $(INCLUDES)
 
 $(OBJDIR)/%.o : %.c $(DEPS)
+	@mkdir -p $(OBJDIR)
 	@echo Building $<
 	@$(CC) -c -o $@ $< $(CFLAGS) $(INCLUDES)
