@@ -23,6 +23,10 @@
 struct psh_alias *aliases;
 int num_aliases;
 
+/*
+ * Shell builtin command handlers.
+ */
+
 void
 psh_exit(char **argv)
 {
@@ -80,6 +84,14 @@ psh_add_alias(char **argv)
 }
 
 void
+psh_cd(char **argv)
+{
+	if (chdir(argv[1])) {
+		printf("Error! %s\n", strerror(errno));
+	}
+}
+
+void
 psh_expand_alias(char *cmd)
 {
 	int i, j, sz, shift;
@@ -132,14 +144,6 @@ psh_setup_cwd()
 	}
 
 	return cwd;
-}
-
-void
-psh_cd(char **argv)
-{
-	if (chdir(argv[1])) {
-		printf("Error! %s\n", strerror(errno));
-	}
 }
 
 /*
