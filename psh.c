@@ -27,14 +27,14 @@ int num_aliases;
  * Shell builtin command handlers.
  */
 
-void
+int
 psh_exit(char **argv)
 {
 	/* The clean-up code goes here. */
 	exit(0);
 }
 
-void
+int
 psh_add_alias(char **argv)
 {
 	int valsz, i;
@@ -45,19 +45,20 @@ psh_add_alias(char **argv)
 
 	if (num_aliases == -1) {
 		printf("Error! Can't add alias. No more memory available\n");
-		return;
+		return ENOMEM;
 	}
 
 	/* Make sure that alias does not already exist. */
 	for (i = 0; i < num_aliases; i++) {
 		if (strcmp(argv[1], aliases[i].name) == 0) {
 			printf("The alias for \"%s\" already exists\n", argv[1]);
+			return EINVAL;
 		}
 	}
 
 	if (argv[2] == NULL) {
 		printf("Error! No alias value specified\n");
-		return;
+		return EINVAL;
 	}
 
 	aliases[num_aliases].name = strdup(argv[1]);
@@ -81,14 +82,19 @@ psh_add_alias(char **argv)
 
 	aliases[num_aliases].value = valstr;
 	num_aliases++;
+
+	return 0;
 }
 
-void
+int
 psh_cd(char **argv)
 {
 	if (chdir(argv[1])) {
 		printf("Error! %s\n", strerror(errno));
+		return errno;
 	}
+
+	return 0;
 }
 
 void
@@ -148,16 +154,20 @@ psh_setup_cwd()
 
 /*
  * Check if the command list passed is a shell builtin command. If it is,
- * execute it and return true. Otherwise, return false.
+ * execute it and return true. Otherwise, return false. If RETVAL is not NULL,
+ * fill it with the return value of the builtin handler.
  */
 static bool
-psh_check_builtin(char **argv)
+psh_check_builtin(char **argv, int *retval)
 {
-	int i;
+	int i, error;
 
 	for (i = 0; i < PSH_NUM_BUILTINS; i++) {
 		if (strcmp(argv[0], psh_builtins[i].name) == 0) {
-			psh_builtins[i].handler(argv);
+			error = psh_builtins[i].handler(argv);
+			if (retval != NULL) {
+				*retval = error;
+			}
 			return true;
 		}
 	}
@@ -165,16 +175,17 @@ psh_check_builtin(char **argv)
 	return false;
 }
 
-static void
+static int
 psh_exec(char *cmd)
 {
 	char **argv, *token;
 	pid_t pid;
-	int i, argv_sz;
+	int i, argv_sz, error;
 
 	argv = calloc(ARGV_CHUNK_SZ, sizeof(*argv));
 	if (argv == NULL) {
-		err(ENOMEM, "Failed to allocate argv buffer");
+		printf("Failed to allocate argv buffer: %s", strerror(ENOMEM));
+		return ENOMEM;
 	}
 	argv_sz = ARGV_CHUNK_SZ;
 
@@ -182,14 +193,15 @@ psh_exec(char *cmd)
 
 	token = strtok(cmd, " \n");
 	if (token == NULL) {
-		return;
+		return 0;
 	}
 
 	argv[0] = strdup(token);
 	for (i = 1; (token = strtok(NULL, " \n")) != NULL; i++) {
 		argv[i] = strdup(token);
 		if (argv[i] == NULL) {
-			err(ENOMEM, "Failed to allocate argument string");
+			printf("Failed to allocate argument string: %s", strerror(ENOMEM));
+			return ENOMEM;
 		}
 
 		/*
@@ -205,13 +217,14 @@ psh_exec(char *cmd)
 	}
 
 	/* Check if the command is a shell-builtin. If yes, handle it separately. */
-	if (psh_check_builtin(argv)) {
-		return;
+	if (psh_check_builtin(argv, &error)) {
+		return error;
 	}
 
 	pid = fork();
 	if (pid < 0) {
-		err(errno, "Fork failed");
+		printf("Fork failed: %s", strerror(errno));
+		return errno;
 	}
 
 	if (pid == 0) {
@@ -227,6 +240,8 @@ psh_exec(char *cmd)
 		free(argv[i]);
 	}
 	free(argv);
+
+	return 0;
 }
 
 static void
@@ -258,17 +273,21 @@ psh_loop()
 }
 
 /* Read and execute the .pshrc file. */
-static void
+static int
 psh_readrc()
 {
 	FILE *rcfile;
 	char *rcpath, *home, *buf;
+	int error;
+
+	error = 0;
 
 	home = getenv("HOME");
 
 	/* We need to allocate memory for $HOME/.pshrc */
 	rcpath = malloc(sizeof(*rcpath) * (strlen(home) + sizeof(PSHRC_PATH) + 1));
 	if (rcpath == NULL) {
+		error = ENOMEM;
 		goto err;
 	}
 
@@ -280,11 +299,13 @@ psh_readrc()
 
 	rcfile = fopen(rcpath, "r");
 	if (rcfile == NULL) {
+		error = errno;
 		goto err_rcpath;
 	}
 
 	buf = malloc(sizeof(*buf) * PSH_RCBUF_SZ);
 	if (buf == NULL) {
+		error = ENOMEM;
 		goto err_rcpath;
 	}
 
@@ -305,13 +326,14 @@ psh_readrc()
 
 	free(buf);
 	free(rcpath);
-	return;
+	return 0;
 
 err_rcpath:
 	free(rcpath);
 err:
-	ASSERT(errno != 0, "On error handling path, but errno == 0");
-	DPRINTF("Failed to open %s: %s\n", PSHRC_PATH, strerror(errno));
+	ASSERT(error != 0, "On error handling path, but errno == 0");
+	DPRINTF("Failed to open %s: %s\n", PSHRC_PATH, strerror(error));
+	return error;
 }
 
 int

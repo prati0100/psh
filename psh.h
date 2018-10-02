@@ -50,7 +50,7 @@ extern int num_aliases;
  */
 
 /* Prototype of a built-in command handler. */
-typedef void builtin_handler_t(char **args);
+typedef int builtin_handler_t(char **args);
 
 /* Forward declarations of the builtin functions. */
 /* TODO: Try to find a way to avoid these forward declarations. */
