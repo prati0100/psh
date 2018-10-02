@@ -23,24 +23,14 @@
 struct psh_alias *aliases;
 int num_aliases;
 
-static void psh_cd(char **);
-static void psh_exit(char **);
-static void psh_add_alias(char **);
-
-static void (*builtin_handlers[])(char **) = {
-	psh_add_alias,
-	psh_cd,
-	psh_exit
-};
-
-static void
+void
 psh_exit(char **argv)
 {
 	/* The clean-up code goes here. */
 	exit(0);
 }
 
-static void
+void
 psh_add_alias(char **argv)
 {
 	int valsz, i;
@@ -89,7 +79,7 @@ psh_add_alias(char **argv)
 	num_aliases++;
 }
 
-static void
+void
 psh_expand_alias(char *cmd)
 {
 	int i, j, sz, shift;
@@ -144,7 +134,7 @@ psh_setup_cwd()
 	return cwd;
 }
 
-static void
+void
 psh_cd(char **argv)
 {
 	if (chdir(argv[1])) {
@@ -161,9 +151,9 @@ psh_check_builtin(char **argv)
 {
 	int i;
 
-	for (i = 0; psh_builtins[i] != NULL; i++) {
-		if (strcmp(argv[0], psh_builtins[i]) == 0) {
-			builtin_handlers[i](argv);
+	for (i = 0; i < PSH_NUM_BUILTINS; i++) {
+		if (strcmp(argv[0], psh_builtins[i].name) == 0) {
+			psh_builtins[i].handler(argv);
 			return true;
 		}
 	}
