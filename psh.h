@@ -38,6 +38,16 @@ extern int num_aliases;
 
 /*
  * Declarations related to shell builtins.
+ *
+ * A shell builtin command is a command that can not be executed in a forked
+ * shell instance. They need to be executed in the current shell instance. For
+ * this reason, binaries of these commands can't exist.
+ *
+ * For example, cd is a shell builtin command. If cd was a binary in the path,
+ * and someone cd'ed to a directory, the shell would fork(), and then change
+ * the working directory of the child. It won't change the current working
+ * directory of the shell from which the command was executed. So, cd has to be
+ * implemented by the shell.
  */
 
 /* Prototype of a built-in command handler. */
