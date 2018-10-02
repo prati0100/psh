@@ -24,7 +24,6 @@
 /* The .pshrc file is stored in ~/.pshrc */
 #define PSHRC_PATH ".pshrc"
 
-/* The symbol used to represent the HOME. */
 #define HOME_SYMBOL '~'
 
 struct psh_alias {
