@@ -52,18 +52,17 @@ extern int num_aliases;
 /* Prototype of a built-in command handler. */
 typedef int builtin_handler_t(char **args);
 
-/* Forward declarations of the builtin functions. */
 /* TODO: Try to find a way to avoid these forward declarations. */
 builtin_handler_t psh_cd;
 builtin_handler_t psh_exit;
 builtin_handler_t psh_add_alias;
 
-/* The built-in commands of the shell. */
 struct psh_builtin {
 	char *name;
 	builtin_handler_t *handler;
 };
 
+/* The built-in commands of the shell. */
 struct psh_builtin psh_builtins[] = {
 	{"alias", psh_add_alias},
 	{"cd", psh_cd},
