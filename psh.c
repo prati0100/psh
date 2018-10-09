@@ -278,6 +278,14 @@ psh_loop()
 			case CTRL('L'):
 				clear();
 				goto out;
+			case CTRL('U'):
+				getyx(stdscr, y, x);
+				for (; i > 0; i--) {
+					move(y, --x);
+					delch();
+				}
+				i = -1;
+				break;
 			case KEY_BACKSPACE:
 				/* There is nothing to delete. */
 				if (i == 0) {
