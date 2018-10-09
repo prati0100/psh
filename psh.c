@@ -269,15 +269,19 @@ psh_loop()
 		/* Read from stdin. Then fork and exec the new command. */
 		for (i = 0; (ch = getch()) != '\n'; i++) {
 			switch (ch) {
+			/* Exit the shell. */
 			case CTRL('D'):
 				printf("exit\n");
 				psh_exit(NULL);
+			/* Cancel the current input and redraw the prompt. */
 			case CTRL('C'):
 				printf("%s\n", keyname(ch));
 				goto out;
+			/* Clear the screen. Also clears the currently input text. */
 			case CTRL('L'):
 				clear();
 				goto out;
+			/* Clear the currently typed text. */
 			case CTRL('U'):
 				getyx(stdscr, y, x);
 				for (; i > 0; i--) {
@@ -286,6 +290,7 @@ psh_loop()
 				}
 				i = -1;
 				break;
+			/* Delete the previous character. */
 			case KEY_BACKSPACE:
 				/* There is nothing to delete. */
 				if (i == 0) {
