@@ -274,7 +274,9 @@ psh_loop()
 				psh_exit(NULL);
 			case CTRL('C'):
 				printf("%s\n", keyname(ch));
-				cmd_buf[0] = 0;
+				goto out;
+			case CTRL('L'):
+				clear();
 				goto out;
 			case KEY_BACKSPACE:
 				/* There is nothing to delete. */
@@ -303,9 +305,8 @@ psh_loop()
 		}
 		printf("%c", ch);
 		cmd_buf[i] = 0;
-out:
 		psh_exec(cmd_buf);
-
+out:
 		free(cwd);
 		/* Now read another command. */
 	}
