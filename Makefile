@@ -1,6 +1,7 @@
 CC = gcc
 INCLUDES = -I .
 CFLAGS = -Wall
+DEBUGFLAGS = -D PSH_DEBUG -g
 # XXX This does not seem like the best way of specifying what libraries to
 # link with, because adding new libraries might get problematic when there is
 # a large number of libraries to link with.
@@ -20,7 +21,7 @@ clean:
 	@rm -f $(OBJDIR)/*.o
 	@rm -f $(BINDIR)/*
 
-debug: CFLAGS += -D PSH_DEBUG
+debug: CFLAGS += $(DEBUGFLAGS)
 debug: all
 
 release: clean all
