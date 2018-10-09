@@ -204,6 +204,7 @@ psh_exec(char *cmd)
 
 	token = strtok(cmd, " \n");
 	if (token == NULL) {
+		free(argv);
 		return 0;
 	}
 
@@ -212,7 +213,8 @@ psh_exec(char *cmd)
 		argv[i] = strdup(token);
 		if (argv[i] == NULL) {
 			printf("Failed to allocate argument string: %s", strerror(ENOMEM));
-			return ENOMEM;
+			error = ENOMEM;
+			goto out;
 		}
 
 		/*
@@ -229,7 +231,7 @@ psh_exec(char *cmd)
 
 	/* Check if the command is a shell-builtin. If yes, handle it separately. */
 	if (psh_check_builtin(argv, &error)) {
-		return error;
+		goto out;
 	}
 
 	pid = fork();
@@ -248,12 +250,16 @@ psh_exec(char *cmd)
 	/* TODO: Handle signals. */
 	wait(NULL);
 
-	for (i = 0; argv[i] != NULL; i++) {
+	error = 0;
+
+out:
+	i--;
+	for (; i >= 0; i--) {
 		free(argv[i]);
 	}
 	free(argv);
 
-	return 0;
+	return error;
 }
 
 static void
