@@ -1,10 +1,12 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
 #include <err.h>
 #include <string.h>
+
+#include <termios.h>
+#include <ncurses.h>
 
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -20,6 +22,11 @@
 
 #define PSH_RCBUF_SZ 150
 
+#define printf(fmt, args...) do {	\
+	printw(fmt, ##args);			\
+	refresh();						\
+} while (0)
+
 struct psh_alias *aliases;
 int num_aliases;
 
@@ -31,6 +38,10 @@ int
 psh_exit(char **argv)
 {
 	/* The clean-up code goes here. */
+
+	/* Clean up ncurses stuff. */
+	endwin();
+
 	exit(0);
 }
 
@@ -234,6 +245,7 @@ psh_exec(char *cmd)
 		exit(errno);
 	}
 
+	/* TODO: Handle signals. */
 	wait(NULL);
 
 	for (i = 0; argv[i] != NULL; i++) {
@@ -247,7 +259,7 @@ psh_exec(char *cmd)
 static void
 psh_loop()
 {
-	int i, ch;
+	int i, ch, y, x;
 	char cmd_buf[ARG_MAX], *cwd;
 
 	while (true) {
@@ -255,16 +267,43 @@ psh_loop()
 		printf("%s> ", cwd);
 
 		/* Read from stdin. Then fork and exec the new command. */
-		for (i = 0; (ch = fgetc(stdin)) != '\n'; i++) {
-			if (ch == EOF) {
+		for (i = 0; (ch = getch()) != '\n'; i++) {
+			switch (ch) {
+			case CTRL('D'):
 				printf("exit\n");
 				psh_exit(NULL);
+			case CTRL('C'):
+				printf("%s\n", keyname(ch));
+				cmd_buf[0] = 0;
+				goto out;
+			case KEY_BACKSPACE:
+				/* There is nothing to delete. */
+				if (i == 0) {
+					i--;
+					break;
+				}
+				getyx(stdscr, y, x);
+				move(y, x-1);
+				delch();
+				/*
+				 * One decrement for the backspace and one decrement for the
+				 * actual char we will delete.
+				 */
+				i -= 2;
+				break;
+			default:
+				/*
+				 * We are in no echo mode so we have to print characters that
+				 * should be echoed manually.
+				 */
+				printf("%c", ch);
+				cmd_buf[i] = ch;
+				break;
 			}
-
-			cmd_buf[i] = ch;
 		}
+		printf("%c", ch);
 		cmd_buf[i] = 0;
-
+out:
 		psh_exec(cmd_buf);
 
 		free(cwd);
@@ -339,12 +378,30 @@ err:
 int
 main()
 {
+	struct termios old_settings, new_settings;
+
 	/* Shell initialization. */
 
-	/* Ignore SIGINT. */
-	struct sigaction sigint_act;
-	sigint_act.sa_handler = SIG_IGN;
-	sigaction(SIGINT, &sigint_act, NULL);
+	/* Initialize ncurses. */
+	initscr();
+	/*
+	 * Disable line buffering. This also delivers control characters directly
+	 * without generating signals.
+	 */
+	raw();
+	noecho();
+	keypad(stdscr, TRUE);
+
+	/*
+	 * nucrses sets up the terminal in such a way that newline and carriage
+	 * return are different. This messes up the output of the programs that we
+	 * run because after the newline the cursor does not reset to 0. The ONLCR
+	 * option expands newlines to newlines + carriage return.
+	 */
+	tcgetattr(0, &old_settings);
+	new_settings = old_settings;
+	new_settings.c_oflag = new_settings.c_oflag | ONLCR;
+	tcsetattr(0, TCSANOW, &new_settings);
 
 	num_aliases = 0;
 	aliases = calloc(ALIAS_CHUNK_SZ, sizeof(*aliases));
