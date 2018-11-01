@@ -31,6 +31,12 @@ struct psh_alias *aliases;
 int num_aliases;
 char *cwd = NULL;	/* The current working directory. */
 
+void
+psh_sigchld_handler(int signal)
+{
+	ASSERT(signal == SIGCHLD, "Not SIGCHLD");
+}
+
 int
 psh_setup_cwd()
 {
@@ -195,7 +201,7 @@ psh_check_builtin(char **argv, int *retval)
 static int
 psh_exec(char *cmd)
 {
-	char **argv, *token;
+	char **argv, *token, ch;
 	pid_t pid;
 	int i, argv_sz, error;
 
@@ -253,8 +259,38 @@ psh_exec(char *cmd)
 		exit(errno);
 	}
 
-	/* TODO: Handle signals. */
-	wait(NULL);
+	/*
+	 * Read input while waiting for the child. If the input is ^C, then
+	 * send a SIGINT to the child. Otherwise, ignore it and keep waiting. If
+	 * the child exits then SIGCHLD is caught and it interrupts getch(). It is
+	 * probably not very portable.
+	 */
+	while ((error = waitpid(pid, NULL, WNOHANG)) == 0) {
+		ch = getch();
+		if (ch != ERR) {
+			printf("%s", keyname(ch));
+		}
+
+		if (ch == CTRL('C')) {
+			kill(pid, SIGINT);
+		}
+	}
+
+	if (error != pid) {
+		error = waitpid(pid, NULL, WNOHANG);
+		ASSERT(error == pid, "waitpid() did not succeed, error = %d", error);
+	}
+
+	/*
+	 * So this is basically a hack. For some reason, after SIGCHLD is handled,
+	 * getch() returns -1 on the immediate next call. Then it goes on like
+	 * normal. Call getch() to clear up any errors. Using nodelay() just to be
+	 * sure that it does not sleep. This is probably not portable. This entire
+	 * dance with SIGCHLD interrupting getch() is probably not portable.
+	 */
+	nodelay(stdscr, 1);
+	getch();
+	nodelay(stdscr, 0);
 
 	error = 0;
 
@@ -410,6 +446,7 @@ int
 main()
 {
 	struct termios old_settings, new_settings;
+	struct sigaction sigchld_act;
 
 	/* Shell initialization. */
 
@@ -433,6 +470,9 @@ main()
 	new_settings = old_settings;
 	new_settings.c_oflag = new_settings.c_oflag | ONLCR;
 	tcsetattr(0, TCSANOW, &new_settings);
+
+	sigchld_act.sa_handler = psh_sigchld_handler;
+	sigaction(SIGCHLD, &sigchld_act, NULL);
 
 	num_aliases = 0;
 	aliases = calloc(ALIAS_CHUNK_SZ, sizeof(*aliases));
