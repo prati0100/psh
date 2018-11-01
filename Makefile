@@ -1,6 +1,6 @@
 CC = gcc
 INCLUDES = -I .
-CFLAGS = -Wall
+CFLAGS = -Wall -Wshadow
 DEBUGFLAGS = -D PSH_DEBUG -g
 # XXX This does not seem like the best way of specifying what libraries to
 # link with, because adding new libraries might get problematic when there is
