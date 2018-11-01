@@ -332,12 +332,12 @@ psh_loop()
 		psh_exec(cmd_buf);
 
 out:
-	/*
-	 * NOTE: The semi-colon after out is needed because the compiler does not
-	 * allow empty labels. The semi-colon acts as an empty statement. If you
-	 * ever want to add a statement after it, remove the semi-colon.
-	 */
-	;
+		/*
+		 * NOTE: The semi-colon after out is needed because the compiler does not
+		 * allow empty labels. The semi-colon acts as an empty statement. If you
+		 * ever want to add a statement after it, remove the semi-colon.
+		 */
+		 ;
 		/* Now read another command. */
 	}
 }
