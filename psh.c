@@ -29,6 +29,37 @@
 
 struct psh_alias *aliases;
 int num_aliases;
+char *cwd = NULL;	/* The current working directory. */
+
+int
+psh_setup_cwd()
+{
+	int i, homelen, cwdlen;
+	char *newcwd, *home;
+
+	newcwd = getcwd(NULL, 0);
+	if (newcwd == NULL) {
+		return errno;
+	}
+
+	/* Check if this belongs to a subdirectory of HOME. */
+	home = getenv("HOME");
+	ASSERT(home != NULL, "HOME is NULL");
+	if (strncmp(newcwd, home, strlen(home)) == 0) {
+		newcwd[0] = HOME_SYMBOL;
+		homelen = strlen(home);
+		cwdlen = strlen(newcwd);
+		for (i = homelen; i <= cwdlen; i++) {
+			newcwd[i - homelen + 1] = newcwd[i];
+		}
+	}
+
+	free(cwd);
+	cwd = strdup(newcwd);
+	free(newcwd);
+
+	return 0;
+}
 
 /*
  * Shell builtin command handlers.
@@ -105,6 +136,8 @@ psh_cd(char **argv)
 		return errno;
 	}
 
+	psh_setup_cwd();
+
 	return 0;
 }
 
@@ -134,33 +167,6 @@ psh_expand_alias(char *cmd)
 			return;
 		}
 	}
-}
-
-static char *
-psh_setup_cwd()
-{
-	int i, homelen, cwdlen;
-	char *cwd, *home;
-
-	/*
-	 * TODO: cwd is allocated and freed every loop, when in most cases it
-	 * doesn't even change. Try to optimize it.
-	 */
-	cwd = getcwd(NULL, 0);
-
-	/* Check if this belongs to a subdirectory of HOME. */
-	home = getenv("HOME");
-	ASSERT(home != NULL, "HOME is NULL");
-	if (strncmp(cwd, home, strlen(home)) == 0) {
-		cwd[0] = HOME_SYMBOL;
-		homelen = strlen(home);
-		cwdlen = strlen(cwd);
-		for (i = homelen; i <= cwdlen; i++) {
-			cwd[i - homelen + 1] = cwd[i];
-		}
-	}
-
-	return cwd;
 }
 
 /*
@@ -266,10 +272,9 @@ static void
 psh_loop()
 {
 	int i, ch, y, x;
-	char cmd_buf[ARG_MAX], *cwd;
+	char cmd_buf[ARG_MAX];
 
 	while (true) {
-		cwd = psh_setup_cwd();
 		printf("%s> ", cwd);
 
 		/* Read from stdin. Then fork and exec the new command. */
@@ -325,8 +330,14 @@ psh_loop()
 		printf("%c", ch);
 		cmd_buf[i] = 0;
 		psh_exec(cmd_buf);
+
 out:
-		free(cwd);
+	/*
+	 * NOTE: The semi-colon after out is needed because the compiler does not
+	 * allow empty labels. The semi-colon acts as an empty statement. If you
+	 * ever want to add a statement after it, remove the semi-colon.
+	 */
+	;
 		/* Now read another command. */
 	}
 }
@@ -432,6 +443,10 @@ main()
 	}
 
 	psh_readrc();
+	if (psh_setup_cwd()) {
+		DPRINTF("Failed to set up the cwd\n");
+		cwd = strdup("");
+	}
 
 	/* The main loop of the shell. Does not return. */
 	psh_loop();
