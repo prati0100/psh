@@ -337,7 +337,7 @@ out:
 		 * allow empty labels. The semi-colon acts as an empty statement. If you
 		 * ever want to add a statement after it, remove the semi-colon.
 		 */
-		 ;
+		;
 		/* Now read another command. */
 	}
 }
